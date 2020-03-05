@@ -14,6 +14,43 @@ async function getData() {
   return cleaned;
 }
 
+function createModel() {
+  const model = tf.sequential(); 
+  
+  model.add(tf.layers.dense({inputShape: [1], units: 1, useBias: true}));
+  // model.add(tf.layers.dense({units: 200, activation: 'softmax'}));
+  model.add(tf.layers.dense({units: 45, activation: 'linear'}));
+  model.add(tf.layers.dense({units: 90, activation: 'relu'}));
+  // Add an output layer
+  model.add(tf.layers.dense({units: 1, useBias: true}));
+
+  return model;
+}
+
+async function trainModel(model, inputs, labels) {
+  // Prepare the model for training.  
+  const learningRate = 0.01;
+  model.compile({    
+    optimizer: tf.train.sgd(learningRate),
+    loss: tf.losses.meanSquaredError,
+    metrics: ['mse'],
+  });
+  
+  const batchSize = 20;
+  const epochs = 70;
+  
+  return await model.fit(inputs, labels, {
+    batchSize,
+    epochs,
+    shuffle: true,
+    callbacks: tfvis.show.fitCallbacks(
+      { name: 'Training Performance' },
+      ['loss', 'mse'], 
+      { height: 200, callbacks: ['onEpochEnd'] }
+    )
+  });
+}
+
 async function run() {
   // Load and plot the original input data that we are going to train on.
   const data = await getData();
@@ -46,23 +83,6 @@ async function run() {
   // Make some predictions using the model and compare them to the
   // original data
   testModel(model, data, tensorData);
-}
-
-function createModel() {
-  // Create a sequential model
-  const model = tf.sequential(); 
-  
-  // Add a single hidden layer
-  model.add(tf.layers.dense({inputShape: [1], units: 1, useBias: true}));
-
-  model.add(tf.layers.dense({units: 15, activation: 'relu'}));
-
-  model.add(tf.layers.dense({units: 10, activation: 'softmax'}));
-  
-  // Add an output layer
-  model.add(tf.layers.dense({units: 1, useBias: true}));
-
-  return model;
 }
 
 /**
@@ -104,29 +124,6 @@ function convertToTensor(data) {
       labelMax,
       labelMin,
     }
-  });
-}
-
-async function trainModel(model, inputs, labels) {
-  // Prepare the model for training.  
-  model.compile({
-    optimizer: tf.train.adam(),
-    loss: tf.losses.meanSquaredError,
-    metrics: ['mse'],
-  });
-  
-  const batchSize = 32;
-  const epochs = 30;
-  
-  return await model.fit(inputs, labels, {
-    batchSize,
-    epochs,
-    shuffle: true,
-    callbacks: tfvis.show.fitCallbacks(
-      { name: 'Training Performance' },
-      ['loss', 'mse'], 
-      { height: 200, callbacks: ['onEpochEnd'] }
-    )
   });
 }
 
